@@ -1,0 +1,26 @@
+{
+  "name": "amodomio-worker-agent-ai",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=20.19.0"
+  },
+  "scripts": {
+    "build": "esbuild src/worker.ts --bundle --platform=node --format=esm --target=node20 --outfile=dist/worker.mjs --packages=external",
+    "start": "node dist/worker.mjs",
+    "dev": "node --import tsx src/worker.ts",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "pg": "^8.12.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.16",
+    "@types/pg": "^8.11.10",
+    "esbuild": "^0.21.5",
+    "tsx": "^4.19.2",
+    "typescript": "^5.0.4",
+    "vitest": "^2.0.3"
+  }
+}
