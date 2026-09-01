@@ -4,7 +4,7 @@ import {
   validateConfig,
 } from "./config.js";
 import { createDatabase, type ClaimedJob } from "./database.js";
-import { generateResponse } from "./openai.js";
+import { generateAiResponse } from "./ai-provider.js";
 import { sendText } from "./zapi.js";
 import {
   parseRuntimeSettings,
@@ -29,12 +29,11 @@ async function processJob(
     job.id,
     settings.historyLimit
   );
-  const responseText = await generateResponse({
-    apiKey: config.openAiApiKey!,
-    model: settings.model,
+  const responseText = await generateAiResponse({
+    config,
+    settings,
     inboundText: job.inboundText,
     history,
-    businessInstructions: settings.businessInstructions,
   });
 
   if (settings.mode === "approval") {
