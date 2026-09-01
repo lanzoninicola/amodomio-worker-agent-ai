@@ -18,6 +18,19 @@ type KnowledgePayload = {
     locations?: Array<Record<string, unknown>>;
     deliveryZones?: Array<Record<string, unknown>>;
     publicLinks?: { menu?: string | null; order?: string | null };
+    featured?: Array<{
+      id: string;
+      title: string;
+      subtitle?: string | null;
+      promotionHintText?: string | null;
+      images?: Array<{
+        alt?: string | null;
+        linkUrl?: string | null;
+        linkText?: string | null;
+        chipModalTitle?: string | null;
+        chipModalBody?: string | null;
+      }>;
+    }>;
     cardapio?: { items?: Array<Record<string, any>> };
   };
 };
@@ -59,7 +72,7 @@ function itemSearchText(row: Record<string, any>) {
       selling.notesPublic,
       selling.Category?.name,
       selling.ItemGroup?.name,
-    ].join(" ")
+    ].join(" "),
   );
 }
 
@@ -82,9 +95,72 @@ function formatMenuItem(row: Record<string, any>) {
   return `- ${item.name}${description ? ` — ${description}` : ""}${variations.length ? ` | ${variations.join("; ")}` : ""}`;
 }
 
+function variationDetails(variation: Record<string, any>) {
+  return Object.fromEntries(
+    (variation.VariationDetail ?? []).map((detail: Record<string, any>) => [
+      detail.key,
+      detail.value,
+    ]),
+  );
+}
+
+function formatSizeVariations(items: Array<Record<string, any>>) {
+  const sizes = new Map<string, Record<string, any>>();
+  for (const row of items) {
+    for (const itemVariation of row.Item?.ItemVariation ?? []) {
+      const variation = itemVariation.Variation;
+      if (variation?.kind === "size" && !sizes.has(variation.code)) {
+        sizes.set(variation.code, variation);
+      }
+    }
+  }
+
+  return [...sizes.values()]
+    .map((variation) => {
+      const details = variationDetails(variation);
+      const facts = [
+        details.maxServeAmount != null
+          ? `serve no máximo ${details.maxServeAmount} pessoa(s)`
+          : null,
+        details.serveDescription ? String(details.serveDescription) : null,
+        details.maxFlavorsAmount != null
+          ? `aceita no máximo ${details.maxFlavorsAmount} sabor(es)`
+          : null,
+        details.flavorsDescription ? String(details.flavorsDescription) : null,
+        variation.additionalInformation,
+      ].filter(Boolean);
+      return `- ${variation.name}${facts.length ? `: ${facts.join("; ")}` : ": capacidade ainda não cadastrada"}`;
+    })
+    .join("\n");
+}
+
+function formatFeatured(
+  featured: NonNullable<KnowledgePayload["structured"]>["featured"],
+) {
+  return (featured ?? [])
+    .map((entry) => {
+      const mediaDetails = (entry.images ?? [])
+        .flatMap((media) => [
+          media.alt,
+          media.linkText,
+          media.chipModalTitle,
+          media.chipModalBody,
+        ])
+        .filter(Boolean);
+      const details = [
+        entry.subtitle,
+        entry.promotionHintText,
+        ...mediaDetails,
+      ].filter(Boolean);
+      const link = entry.images?.find((media) => media.linkUrl)?.linkUrl;
+      return `- ${entry.title}${details.length ? ` — ${details.join("; ")}` : ""}${link ? ` | Link: ${link}` : ""}`;
+    })
+    .join("\n");
+}
+
 export function formatKnowledgeContext(
   knowledge: KnowledgePayload,
-  inboundText: string
+  inboundText: string,
 ) {
   const sections: string[] = [];
   const instructions = knowledge.instructions?.content?.trim();
@@ -96,7 +172,7 @@ export function formatKnowledgeContext(
   const opening = structured.storeOpening;
   if (opening) {
     sections.push(
-      `STATUS E HORARIOS:\nLoja agora: ${opening.status?.isOpen ? "aberta" : "fechada"}. Override: ${opening.override ?? "auto"}. Agenda: ${JSON.stringify(opening.schedule ?? [])}`
+      `STATUS E HORARIOS:\nLoja agora: ${opening.status?.isOpen ? "aberta" : "fechada"}. Override: ${opening.override ?? "auto"}. Agenda: ${JSON.stringify(opening.schedule ?? [])}`,
     );
   }
 
@@ -105,9 +181,9 @@ export function formatKnowledgeContext(
       `UNIDADES:\n${structured.locations
         .map(
           (location) =>
-            `- ${location.name}: ${location.address}, ${location.city}/${location.state}. Telefone: ${location.phoneNumber ?? "nao informado"}`
+            `- ${location.name}: ${location.address}, ${location.city}/${location.state}. Telefone: ${location.phoneNumber ?? "nao informado"}`,
         )
-        .join("\n")}`
+        .join("\n")}`,
     );
   }
 
@@ -132,11 +208,42 @@ export function formatKnowledgeContext(
             : undefined;
           return `- ${zone.name}, ${zone.city}/${zone.state}: taxa ${fee == null ? "nao informada" : `R$ ${Number(fee).toFixed(2)}`}${distance?.estimatedTimeInMin ? `, estimativa ${distance.estimatedTimeInMin} min` : ""}`;
         })
-        .join("\n")}`
+        .join("\n")}`,
     );
   }
 
   const allItems = structured.cardapio?.items ?? [];
+  const wantsRecommendation = includesAny(inboundText, [
+    "recomenda",
+    "recomendacao",
+    "indica",
+    "sugere",
+    "sugestao",
+    "qual pizza",
+    "qual sabor",
+    "parecida com",
+  ]);
+  if (wantsRecommendation) {
+    const featured = formatFeatured(structured.featured);
+    sections.push(
+      featured
+        ? `DESTAQUES OFICIAIS PARA RECOMENDACAO:\n${featured}`
+        : "DESTAQUES OFICIAIS PARA RECOMENDACAO:\nNenhum destaque publicado no momento.",
+    );
+  }
+  const wantsSizeGuidance = includesAny(inboundText, [
+    "tamanho",
+    "pessoa",
+    "pessoas",
+    "serve",
+    "suficiente",
+    "quantos sabores",
+    "sabores permite",
+  ]);
+  if (wantsSizeGuidance) {
+    const sizes = formatSizeVariations(allItems);
+    if (sizes) sections.push(`CAPACIDADE DOS TAMANHOS:\n${sizes}`);
+  }
   const wantsFullMenu = includesAny(inboundText, [
     "cardapio",
     "menu",
@@ -154,12 +261,12 @@ export function formatKnowledgeContext(
       });
   if (matchedItems.length) {
     sections.push(
-      `CARDAPIO PUBLICADO:\n${matchedItems.map(formatMenuItem).join("\n")}`
+      `CARDAPIO PUBLICADO:\n${matchedItems.map(formatMenuItem).join("\n")}`,
     );
   }
 
   sections.push(
-    "REGRAS DE USO: trate estes dados como fonte oficial atual. Nao invente informacoes ausentes. Se a informacao nao estiver aqui, diga que precisa confirmar com a equipe."
+    "REGRAS DE USO: trate estes dados como fonte oficial atual. Nao invente informacoes ausentes. Em perguntas sobre tamanho, use somente CAPACIDADE DOS TAMANHOS; se a capacidade estiver sem cadastro, diga que precisa confirmar com a equipe. Em pedidos de recomendacao, recomende somente itens de DESTAQUES OFICIAIS PARA RECOMENDACAO. Se nenhum destaque corresponder ao gosto informado, diga isso claramente em vez de recomendar outro item do cardapio.",
   );
   return sections.join("\n\n").slice(0, MAX_CONTEXT_CHARS);
 }
@@ -167,7 +274,7 @@ export function formatKnowledgeContext(
 export function findDeterministicResponse(
   knowledge: KnowledgePayload,
   inboundText: string,
-  now = new Date()
+  now = new Date(),
 ) {
   const normalizedText = normalize(inboundText);
   const company = knowledge.structured?.locations?.[0];
@@ -192,7 +299,7 @@ export function findDeterministicResponse(
           return `{{${key}}}`;
         }
         return value;
-      }
+      },
     );
     return hasMissingValue ? null : response.trim();
   };
@@ -231,9 +338,11 @@ export async function loadKnowledgeContext(params: {
       {
         headers: { "x-api-key": params.apiKey },
         signal: AbortSignal.timeout(15_000),
-      }
+      },
     );
-    const payload = (await response.json().catch(() => ({}))) as KnowledgeResponse;
+    const payload = (await response
+      .json()
+      .catch(() => ({}))) as KnowledgeResponse;
     if (!response.ok || !payload.ok || !payload.knowledge) {
       throw new Error(`Amodomio knowledge request failed (${response.status})`);
     }
@@ -244,7 +353,7 @@ export async function loadKnowledgeContext(params: {
     context: formatKnowledgeContext(knowledge, params.inboundText),
     deterministicResponse: findDeterministicResponse(
       knowledge,
-      params.inboundText
+      params.inboundText,
     ),
   };
 }

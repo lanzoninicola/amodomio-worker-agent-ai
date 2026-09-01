@@ -20,6 +20,14 @@ const knowledge = {
       menu: "https://www.amodomio.com.br/cardapio",
       order: "https://amodomio.mandarpedido.com/mobile/home",
     },
+    featured: [
+      {
+        id: "featured-caprese",
+        title: "Sabor Caprese com rúcula",
+        subtitle: "Leve e aromática",
+        images: [{ linkUrl: "/cardapio#caprese", alt: "Pizza Caprese" }],
+      },
+    ],
     storeOpening: {
       status: { isOpen: true },
       override: "auto",
@@ -51,7 +59,15 @@ const knowledge = {
             ItemSellingInfo: { ingredients: "Calabresa e cebola" },
             ItemVariation: [
               {
-                Variation: { name: "Grande" },
+                Variation: {
+                  kind: "size",
+                  code: "grande",
+                  name: "Grande",
+                  VariationDetail: [
+                    { key: "maxServeAmount", value: 4 },
+                    { key: "maxFlavorsAmount", value: 2 },
+                  ],
+                },
                 ItemSellingPriceVariation: [{ priceAmount: 59.9 }],
               },
             ],
@@ -75,12 +91,32 @@ describe("formatKnowledgeContext", () => {
     expect(context).toContain("AREAS DE ENTREGA");
     expect(context).toContain("R$ 8.00");
   });
+
+  it("uses structured variation details for size guidance", () => {
+    const context = formatKnowledgeContext(
+      knowledge,
+      "Qual tamanho serve quatro pessoas?",
+    );
+    expect(context).toContain("CAPACIDADE DOS TAMANHOS");
+    expect(context).toContain("Grande: serve no máximo 4 pessoa(s)");
+    expect(context).toContain("aceita no máximo 2 sabor(es)");
+  });
+
+  it("uses published cardapio highlights for recommendations", () => {
+    const context = formatKnowledgeContext(
+      knowledge,
+      "Qual pizza você recomenda?",
+    );
+    expect(context).toContain("DESTAQUES OFICIAIS PARA RECOMENDACAO");
+    expect(context).toContain("Sabor Caprese com rúcula");
+    expect(context).toContain("recomende somente itens");
+  });
 });
 
 describe("findDeterministicResponse", () => {
   it("uses a managed rule before the AI", () => {
     expect(findDeterministicResponse(knowledge, "Quero o cardápio")).toContain(
-      "https://www.amodomio.com.br/cardapio"
+      "https://www.amodomio.com.br/cardapio",
     );
   });
 
@@ -99,13 +135,13 @@ describe("findDeterministicResponse", () => {
       ],
     };
     expect(findDeterministicResponse(withTemplate, "Qual o endereço?")).toBe(
-      "Estamos em Rua Teste, 1, Pato Branco/PR."
+      "Estamos em Rua Teste, 1, Pato Branco/PR.",
     );
   });
 
   it("returns null when no managed rule matches", () => {
     expect(
-      findDeterministicResponse(knowledge, "Quanto custa a calabresa?")
+      findDeterministicResponse(knowledge, "Quanto custa a calabresa?"),
     ).toBeNull();
   });
 });
