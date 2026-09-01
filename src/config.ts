@@ -16,6 +16,7 @@ export function getConfig() {
       process.env.WHATSAPP_WORKER_ID?.trim() ||
       `whatsapp-worker-${process.pid}`,
     openAiApiKey: process.env.OPENAI_API_KEY?.trim(),
+    openRouterApiKey: process.env.OPENROUTER_API_KEY?.trim(),
     zapiInstanceId: process.env.VITE_ZAPI_INSTANCE_ID?.trim(),
     zapiInstanceToken: process.env.VITE_ZAPI_INSTANCE_TOKEN?.trim(),
     zapiClientToken: process.env.VITE_ZAPI_CLIENT_TOKEN?.trim(),
@@ -24,7 +25,6 @@ export function getConfig() {
 
 export function validateConfig(config: ReturnType<typeof getConfig>) {
   if (!config.databaseUrl) throw new Error("PRISMA_DB_URL is required");
-  if (!config.openAiApiKey) throw new Error("OPENAI_API_KEY is required");
   if (!config.zapiInstanceId) {
     throw new Error("VITE_ZAPI_INSTANCE_ID is required");
   }

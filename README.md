@@ -20,6 +20,12 @@ container nao expoe porta e o healthcheck verifica o heartbeat do loop.
 As configuracoes operacionais ficam no contexto `whatsapp-ai-agent` da tabela
 `settings` e podem ser editadas pela tela generica de configuracoes do Amodomio.
 
+Para testar gratuitamente, use `provider=openrouter` e
+`model=openrouter/free`. A chave fica somente em `OPENROUTER_API_KEY` no
+Dokploy. OpenRouter e bloqueado fora do modo `test` e recebe somente o texto da
+mensagem atual, sem telefone, nome, identificadores, historico ou instrucoes
+comerciais internas.
+
 ## Modos
 
 - `test`: responde somente ao telefone definido em `testPhone`.

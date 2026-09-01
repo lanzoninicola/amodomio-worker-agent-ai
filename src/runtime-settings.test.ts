@@ -7,6 +7,7 @@ describe("parseRuntimeSettings", () => {
       enabled: false,
       mode: "test",
       testPhone: null,
+      provider: "openrouter",
     });
   });
 
@@ -21,6 +22,13 @@ describe("parseRuntimeSettings", () => {
       enabled: true,
       mode: "test",
       testPhone: "5546999999999",
+    });
+  });
+
+  it("allows selecting OpenAI explicitly", () => {
+    expect(parseRuntimeSettings({ provider: "openai" })).toMatchObject({
+      provider: "openai",
+      model: "gpt-5-mini",
     });
   });
 });

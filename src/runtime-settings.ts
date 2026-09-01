@@ -8,6 +8,7 @@ export type RuntimeSettings = {
   enabled: boolean;
   mode: WhatsappAgentMode;
   testPhone: string | null;
+  provider: "openai" | "openrouter";
   model: string;
   pollIntervalMs: number;
   lockSeconds: number;
@@ -29,11 +30,18 @@ export function parseRuntimeSettings(
   const mode: WhatsappAgentMode = ["test", "approval", "auto"].includes(rawMode)
     ? (rawMode as WhatsappAgentMode)
     : "test";
+  const provider =
+    values.provider?.trim().toLowerCase() === "openai"
+      ? "openai"
+      : "openrouter";
   return {
     enabled: parseEnabled(values.enabled),
     mode,
     testPhone: normalizePhone(values.testPhone),
-    model: values.model?.trim() || "gpt-5-mini",
+    provider,
+    model:
+      values.model?.trim() ||
+      (provider === "openrouter" ? "openrouter/free" : "gpt-5-mini"),
     pollIntervalMs: positiveInt(values.pollIntervalMs, 2_000),
     lockSeconds: positiveInt(values.lockSeconds, 120),
     maxAttempts: positiveInt(values.maxAttempts, 5),
