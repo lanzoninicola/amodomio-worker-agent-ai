@@ -23,4 +23,6 @@ COPY --from=builder /app/dist ./dist
 HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 \
   CMD node -e "const fs=require('node:fs');const p='/tmp/whatsapp-agent-worker-heartbeat';const s=fs.statSync(p);if(Date.now()-s.mtimeMs>90000)process.exit(1)"
 
-CMD ["npm", "start"]
+STOPSIGNAL SIGTERM
+
+CMD ["node", "dist/worker.mjs"]
