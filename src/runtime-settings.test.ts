@@ -6,22 +6,22 @@ describe("parseRuntimeSettings", () => {
     expect(parseRuntimeSettings({})).toMatchObject({
       enabled: false,
       mode: "test",
-      testPhone: null,
+      testPhones: [],
       provider: "openrouter",
     });
   });
 
-  it("normalizes the only phone authorized in test mode", () => {
+  it("normalizes up to two phones authorized in test mode", () => {
     expect(
       parseRuntimeSettings({
         enabled: "true",
         mode: "test",
-        testPhone: "+55 (46) 99999-9999",
+        testPhone: "+55 (46) 99999-9999, 55 46 98888-8888, 5546777777777",
       })
     ).toMatchObject({
       enabled: true,
       mode: "test",
-      testPhone: "5546999999999",
+      testPhones: ["5546999999999", "5546988888888"],
     });
   });
 

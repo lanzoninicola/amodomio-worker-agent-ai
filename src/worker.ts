@@ -48,7 +48,7 @@ async function processJob(
     return;
   }
 
-  if (settings.mode === "test" && job.phone !== settings.testPhone) {
+  if (settings.mode === "test" && !settings.testPhones.includes(job.phone)) {
     throw new Error("Test mode blocked a job from a non-authorized phone");
   }
 
@@ -85,7 +85,7 @@ async function main() {
         continue;
       }
 
-      if (settings.mode === "test" && !settings.testPhone) {
+      if (settings.mode === "test" && settings.testPhones.length === 0) {
         console.warn("[whatsapp-agent] test mode requires setting testPhone");
         await delay(settings.pollIntervalMs);
         continue;
@@ -94,7 +94,7 @@ async function main() {
       const job = await database.claimNext(
         config.workerId,
         settings.lockSeconds,
-        settings.mode === "test" ? settings.testPhone : null,
+        settings.mode === "test" ? settings.testPhones : null,
         settings.maxJobAgeMinutes,
         storedSettings.activationUpdatedAt ?? new Date()
       );

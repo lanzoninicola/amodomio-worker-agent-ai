@@ -7,7 +7,7 @@ import {
 export type RuntimeSettings = {
   enabled: boolean;
   mode: WhatsappAgentMode;
-  testPhone: string | null;
+  testPhones: string[];
   provider: "openai" | "openrouter";
   model: string;
   pollIntervalMs: number;
@@ -21,6 +21,15 @@ export type RuntimeSettings = {
 export function normalizePhone(value: string | undefined) {
   const digits = value?.replace(/\D/g, "") ?? "";
   return digits.length >= 10 ? digits : null;
+}
+
+export function normalizeTestPhones(value: string | undefined) {
+  return (value ?? "")
+    .split(/[\n,;]+/)
+    .map((phone) => normalizePhone(phone))
+    .filter((phone): phone is string => Boolean(phone))
+    .filter((phone, index, phones) => phones.indexOf(phone) === index)
+    .slice(0, 2);
 }
 
 export function parseRuntimeSettings(
@@ -37,7 +46,7 @@ export function parseRuntimeSettings(
   return {
     enabled: parseEnabled(values.enabled),
     mode,
-    testPhone: normalizePhone(values.testPhone),
+    testPhones: normalizeTestPhones(values.testPhone),
     provider,
     model:
       values.model?.trim() ||
