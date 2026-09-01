@@ -34,7 +34,7 @@ export async function generateResponse(params: {
   model: string;
   inboundText: string;
   history: ConversationTurn[];
-  businessInstructions?: string;
+  knowledgeContext: string;
 }) {
   const historyText = params.history
     .map(
@@ -57,9 +57,9 @@ export async function generateResponse(params: {
     },
     body: JSON.stringify({
       model: params.model,
-      instructions: [INSTRUCTIONS, params.businessInstructions?.trim()]
+      instructions: [INSTRUCTIONS, params.knowledgeContext.trim()]
         .filter(Boolean)
-        .join("\n\nInstrucoes comerciais configuradas pela empresa:\n"),
+        .join("\n\nCONHECIMENTO OFICIAL DO AMODOMIO:\n"),
       input,
       max_output_tokens: 300,
     }),

@@ -10,6 +10,7 @@ import {
   parseRuntimeSettings,
   type RuntimeSettings,
 } from "./runtime-settings.js";
+import { loadKnowledgeContext } from "./knowledge.js";
 
 const HEARTBEAT_PATH = "/tmp/whatsapp-agent-worker-heartbeat";
 let stopping = false;
@@ -29,11 +30,17 @@ async function processJob(
     job.id,
     settings.historyLimit
   );
+  const knowledgeContext = await loadKnowledgeContext({
+    baseUrl: config.amodomioApiUrl!,
+    apiKey: config.amodomioApiKey!,
+    inboundText: job.inboundText,
+  });
   const responseText = await generateAiResponse({
     config,
     settings,
     inboundText: job.inboundText,
     history,
+    knowledgeContext,
   });
 
   if (settings.mode === "approval") {

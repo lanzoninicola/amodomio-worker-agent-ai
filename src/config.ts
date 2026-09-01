@@ -17,6 +17,8 @@ export function getConfig() {
       `whatsapp-worker-${process.pid}`,
     openAiApiKey: process.env.OPENAI_API_KEY?.trim(),
     openRouterApiKey: process.env.OPENROUTER_API_KEY?.trim(),
+    amodomioApiUrl: process.env.AMODOMIO_API_URL?.trim(),
+    amodomioApiKey: process.env.AMODOMIO_API_KEY?.trim(),
     zapiInstanceId: process.env.VITE_ZAPI_INSTANCE_ID?.trim(),
     zapiInstanceToken: process.env.VITE_ZAPI_INSTANCE_TOKEN?.trim(),
     zapiClientToken: process.env.VITE_ZAPI_CLIENT_TOKEN?.trim(),
@@ -33,5 +35,11 @@ export function validateConfig(config: ReturnType<typeof getConfig>) {
   }
   if (!config.zapiClientToken) {
     throw new Error("VITE_ZAPI_CLIENT_TOKEN is required");
+  }
+  if (!config.amodomioApiUrl) {
+    throw new Error("AMODOMIO_API_URL is required");
+  }
+  if (!config.amodomioApiKey) {
+    throw new Error("AMODOMIO_API_KEY is required");
   }
 }
