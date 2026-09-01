@@ -17,14 +17,20 @@ Crie uma **Application** conectada a este repositorio GitHub:
 Copie as variaveis de `.env.example` para a aba **Environment** do Dokploy. O
 container nao expoe porta e o healthcheck verifica o heartbeat do loop.
 
+Configure `AMODOMIO_API_URL=https://www.amodomio.com.br` e use em
+`AMODOMIO_API_KEY` o mesmo segredo configurado como
+`VITE_REST_API_SECRET_KEY` no aplicativo principal. O worker consulta
+`GET /api/ai/knowledge` com `x-api-key` e mantem o resultado em cache por cinco
+minutos.
+
 As configuracoes operacionais ficam no contexto `whatsapp-ai-agent` da tabela
 `settings` e podem ser editadas pela tela generica de configuracoes do Amodomio.
 
 Para testar gratuitamente, use `provider=openrouter` e
 `model=openrouter/free`. A chave fica somente em `OPENROUTER_API_KEY` no
-Dokploy. OpenRouter e bloqueado fora do modo `test` e recebe somente o texto da
-mensagem atual, sem telefone, nome, identificadores, historico ou instrucoes
-comerciais internas.
+Dokploy. OpenRouter e bloqueado fora do modo `test`. Ele recebe a mensagem
+atual e somente o conhecimento empresarial relevante, sem telefone, nome,
+identificadores ou historico da conversa.
 
 ## Modos
 

@@ -9,6 +9,7 @@ export async function generateOpenRouterTestResponse(params: {
   apiKey: string;
   model: string;
   inboundText: string;
+  knowledgeContext: string;
 }) {
   const response = await fetch(
     "https://openrouter.ai/api/v1/chat/completions",
@@ -22,7 +23,10 @@ export async function generateOpenRouterTestResponse(params: {
       body: JSON.stringify({
         model: params.model,
         messages: [
-          { role: "system", content: SAFETY_INSTRUCTIONS },
+          {
+            role: "system",
+            content: `${SAFETY_INSTRUCTIONS}\n\n${params.knowledgeContext}`,
+          },
           { role: "user", content: params.inboundText },
         ],
         max_tokens: 300,

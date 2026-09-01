@@ -15,6 +15,7 @@ export async function generateAiResponse(params: {
   settings: RuntimeSettings;
   inboundText: string;
   history: ConversationTurn[];
+  knowledgeContext: string;
 }) {
   const { config, settings } = params;
   assertProviderMode(settings);
@@ -27,6 +28,7 @@ export async function generateAiResponse(params: {
       apiKey: config.openRouterApiKey,
       model: settings.model,
       inboundText: params.inboundText,
+      knowledgeContext: params.knowledgeContext,
     });
   }
 
@@ -38,6 +40,6 @@ export async function generateAiResponse(params: {
     model: settings.model,
     inboundText: params.inboundText,
     history: params.history,
-    businessInstructions: settings.businessInstructions,
+    knowledgeContext: params.knowledgeContext,
   });
 }
