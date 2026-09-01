@@ -30,7 +30,7 @@ async function processJob(
     job.id,
     settings.historyLimit
   );
-  const knowledgeContext = await loadKnowledgeContext({
+  const knowledge = await loadKnowledgeContext({
     baseUrl: config.amodomioApiUrl!,
     apiKey: config.amodomioApiKey!,
     inboundText: job.inboundText,
@@ -40,7 +40,8 @@ async function processJob(
     settings,
     inboundText: job.inboundText,
     history,
-    knowledgeContext,
+    knowledgeContext: knowledge.context,
+    deterministicResponse: knowledge.deterministicResponse,
   });
 
   if (settings.mode === "approval") {
