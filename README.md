@@ -34,13 +34,13 @@ identificadores ou historico da conversa.
 
 ## Modos
 
-- `test`: responde somente ao telefone definido em `testPhone`.
+- `test`: responde somente aos telefones definidos em `testPhone`.
 - `approval`: gera a resposta e salva o job como `generated`, sem enviar.
 - `auto`: gera, envia pela Z-API e salva o job como `sent`.
 
 Para o primeiro teste, configure `enabled=true`, `mode=test` e informe em
-`testPhone` apenas os digitos do numero com DDI e DDD. O filtro e aplicado na
-reserva SQL e conferido novamente antes do envio. Jobs de outros numeros
+`testPhone` até dois números com DDI e DDD, separados por vírgula. O filtro é
+aplicado na reserva SQL e conferido novamente antes do envio. Jobs de outros números
 permanecem pendentes e nao sao processados.
 
 Jobs que ultrapassam `maxJobAgeMinutes` sao marcados como `expired`, evitando

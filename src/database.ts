@@ -43,7 +43,7 @@ export function createDatabase(databaseUrl: string) {
     async claimNext(
       workerId: string,
       lockSeconds: number,
-      phoneFilter: string | null,
+      phoneFilters: string[] | null,
       maxJobAgeMinutes: number,
       activationUpdatedAt: Date
     ) {
@@ -56,7 +56,7 @@ export function createDatabase(databaseUrl: string) {
              (status = 'pending' AND available_at <= NOW())
              OR (status = 'processing' AND locked_at < $1)
            )
-           AND ($3::text IS NULL OR phone = $3)
+           AND ($3::text[] IS NULL OR phone = ANY($3::text[]))
            AND created_at >= NOW() - ($4 * INTERVAL '1 minute')
            AND created_at >= $5
            ORDER BY available_at ASC, created_at ASC
@@ -80,7 +80,7 @@ export function createDatabase(databaseUrl: string) {
         [
           staleBefore,
           workerId,
-          phoneFilter,
+          phoneFilters,
           maxJobAgeMinutes,
           activationUpdatedAt,
         ]
