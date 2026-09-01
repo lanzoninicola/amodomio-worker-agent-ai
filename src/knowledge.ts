@@ -1,5 +1,14 @@
 type KnowledgePayload = {
   instructions?: { content?: string; version?: number } | null;
+  deterministicResponses?: Array<{
+    id: string;
+    trigger: string;
+    isRegex: boolean;
+    response: string;
+    priority: number;
+    activeFrom?: string | null;
+    activeTo?: string | null;
+  }>;
   structured?: {
     storeOpening?: {
       status?: { isOpen?: boolean; reason?: string };
@@ -8,13 +17,14 @@ type KnowledgePayload = {
     };
     locations?: Array<Record<string, unknown>>;
     deliveryZones?: Array<Record<string, unknown>>;
+    publicLinks?: { menu?: string | null; order?: string | null };
     cardapio?: { items?: Array<Record<string, any>> };
   };
 };
 
 type KnowledgeResponse = { ok?: boolean; knowledge?: KnowledgePayload };
 
-const CACHE_TTL_MS = 5 * 60_000;
+const CACHE_TTL_MS = 60_000;
 const MAX_CONTEXT_CHARS = 30_000;
 let cache: { expiresAt: number; value: KnowledgePayload } | null = null;
 
@@ -154,6 +164,59 @@ export function formatKnowledgeContext(
   return sections.join("\n\n").slice(0, MAX_CONTEXT_CHARS);
 }
 
+export function findDeterministicResponse(
+  knowledge: KnowledgePayload,
+  inboundText: string,
+  now = new Date()
+) {
+  const normalizedText = normalize(inboundText);
+  const company = knowledge.structured?.locations?.[0];
+  const values: Record<string, unknown> = {
+    "company.name": company?.name,
+    "company.address": company?.address,
+    "company.city": company?.city,
+    "company.state": company?.state,
+    "company.phone": company?.phoneNumber,
+    "links.menu": knowledge.structured?.publicLinks?.menu,
+    "links.order": knowledge.structured?.publicLinks?.order,
+  };
+
+  const render = (template: string) => {
+    let hasMissingValue = false;
+    const response = template.replace(
+      /\{\{\s*([\w.]+)\s*\}\}/g,
+      (_, key: string) => {
+        const value = values[key];
+        if (typeof value !== "string" || !value.trim()) {
+          hasMissingValue = true;
+          return `{{${key}}}`;
+        }
+        return value;
+      }
+    );
+    return hasMissingValue ? null : response.trim();
+  };
+
+  for (const rule of knowledge.deterministicResponses ?? []) {
+    if (rule.activeFrom && now < new Date(rule.activeFrom)) continue;
+    if (rule.activeTo && now > new Date(rule.activeTo)) continue;
+    if (!rule.trigger?.trim() || !rule.response?.trim()) continue;
+
+    if (rule.isRegex) {
+      try {
+        if (new RegExp(rule.trigger, "iu").test(inboundText)) {
+          return render(rule.response);
+        }
+      } catch {
+        continue;
+      }
+    } else if (normalizedText.includes(normalize(rule.trigger))) {
+      return render(rule.response);
+    }
+  }
+  return null;
+}
+
 export async function loadKnowledgeContext(params: {
   baseUrl: string;
   apiKey: string;
@@ -177,5 +240,11 @@ export async function loadKnowledgeContext(params: {
     knowledge = payload.knowledge;
     cache = { value: knowledge, expiresAt: Date.now() + CACHE_TTL_MS };
   }
-  return formatKnowledgeContext(knowledge, params.inboundText);
+  return {
+    context: formatKnowledgeContext(knowledge, params.inboundText),
+    deterministicResponse: findDeterministicResponse(
+      knowledge,
+      params.inboundText
+    ),
+  };
 }

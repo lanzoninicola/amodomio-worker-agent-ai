@@ -16,9 +16,11 @@ export async function generateAiResponse(params: {
   inboundText: string;
   history: ConversationTurn[];
   knowledgeContext: string;
+  deterministicResponse: string | null;
 }) {
   const { config, settings } = params;
   assertProviderMode(settings);
+  if (params.deterministicResponse) return params.deterministicResponse;
 
   if (settings.provider === "openrouter") {
     if (!config.openRouterApiKey) {

@@ -20,8 +20,18 @@ container nao expoe porta e o healthcheck verifica o heartbeat do loop.
 Configure `AMODOMIO_API_URL=https://www.amodomio.com.br` e use em
 `AMODOMIO_API_KEY` o mesmo segredo configurado como
 `VITE_REST_API_SECRET_KEY` no aplicativo principal. O worker consulta
-`GET /api/ai/knowledge` com `x-api-key` e mantem o resultado em cache por cinco
-minutos.
+`GET /api/ai/knowledge` com `x-api-key` e mantem o resultado em cache por um
+minuto.
+
+Respostas deterministicas são cadastradas no Amodomio e consultadas antes do
+modelo. Saidas internas de classificadores de seguranca do OpenRouter sao
+rejeitadas e nunca enviadas ao cliente.
+
+As respostas podem usar `{{company.name}}`, `{{company.address}}`,
+`{{company.city}}`, `{{company.state}}`, `{{company.phone}}`, `{{links.menu}}`
+e `{{links.order}}`. O worker resolve esses placeholders usando a fonte oficial;
+se algum valor estiver ausente, a regra não é enviada e a mensagem segue para a
+AI.
 
 As configuracoes operacionais ficam no contexto `whatsapp-ai-agent` da tabela
 `settings` e podem ser editadas pela tela generica de configuracoes do Amodomio.
