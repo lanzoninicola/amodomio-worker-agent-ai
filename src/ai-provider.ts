@@ -3,6 +3,7 @@ import { generateResponse as generateOpenAiResponse } from "./openai.js";
 import { generateOpenRouterTestResponse } from "./openrouter.js";
 import type { RuntimeSettings } from "./runtime-settings.js";
 import type { ConversationTurn } from "./openai.js";
+import { ensureCustomerSafeResponse } from "./response-safety.js";
 
 export function assertProviderMode(settings: RuntimeSettings) {
   if (settings.provider === "openrouter" && settings.mode !== "test") {
@@ -20,28 +21,32 @@ export async function generateAiResponse(params: {
 }) {
   const { config, settings } = params;
   assertProviderMode(settings);
-  if (params.deterministicResponse) return params.deterministicResponse;
+  if (params.deterministicResponse) {
+    return ensureCustomerSafeResponse(params.deterministicResponse);
+  }
 
   if (settings.provider === "openrouter") {
     if (!config.openRouterApiKey) {
       throw new Error("OPENROUTER_API_KEY is required for OpenRouter");
     }
-    return generateOpenRouterTestResponse({
+    const response = await generateOpenRouterTestResponse({
       apiKey: config.openRouterApiKey,
       model: settings.model,
       inboundText: params.inboundText,
       knowledgeContext: params.knowledgeContext,
     });
+    return ensureCustomerSafeResponse(response);
   }
 
   if (!config.openAiApiKey) {
     throw new Error("OPENAI_API_KEY is required for OpenAI");
   }
-  return generateOpenAiResponse({
+  const response = await generateOpenAiResponse({
     apiKey: config.openAiApiKey,
     model: settings.model,
     inboundText: params.inboundText,
     history: params.history,
     knowledgeContext: params.knowledgeContext,
   });
+  return ensureCustomerSafeResponse(response);
 }
